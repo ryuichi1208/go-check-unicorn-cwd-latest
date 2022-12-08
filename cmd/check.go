@@ -12,7 +12,8 @@ import (
 )
 
 type options struct {
-	PROC_NAME string `short:"p" description:"process name" required:"true"`
+	PROC_NAME   string `short:"p" description:"process name" required:"true"`
+	RELEASE_DIR string `short:"d" description:"release directory" required:"true"`
 }
 
 var opts options
@@ -44,10 +45,33 @@ func getProcessNameToPID(processName string) (int, error) {
 
 }
 
-func symLinkCheck(link string) error {
-	fmt.Println(link)
-	if _, err := os.Stat(link); os.IsNotExist(err) {
+func symLinkCheckExists(link string) error {
+	if _, err := os.Stat(strings.Split(link, "")[0]); os.IsNotExist(err) {
 		return fmt.Errorf("no such directory: %s", link)
+	}
+
+	return nil
+}
+
+func symLinkCheckLatest(link, dir string) error {
+	files, _ := ioutil.ReadDir(dir)
+	var newestFile string
+	var newestTime int64 = 0
+	for _, f := range files {
+		fi, err := os.Stat(dir + "/" + f.Name())
+		if err != nil {
+			fmt.Println(err)
+		}
+		currTime := fi.ModTime().Unix()
+		if currTime > newestTime {
+			newestTime = currTime
+			newestFile = f.Name()
+		}
+	}
+	fmt.Println(newestFile)
+
+	if strings.Split(link, "")[0] != dir+"/"+newestFile {
+		return fmt.Errorf("Current reference is not up-to-date")
 	}
 
 	return nil
@@ -60,7 +84,17 @@ func checkProcessCWD(pid int) error {
 		return fmt.Errorf("error")
 	}
 
-	return symLinkCheck(link)
+	err = symLinkCheckExists(link)
+	if err != nil {
+		return err
+	}
+
+	err = symLinkCheckLatest(link, opts.RELEASE_DIR)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func parseArgs(args []string) error {
