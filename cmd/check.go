@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/mackerelio/checkers"
 )
 
 type options struct {
@@ -113,25 +114,30 @@ func parseArgs(args []string) error {
 }
 
 func Do() {
+	chkSt := checkers.OK
 	err := parseArgs(os.Args[1:])
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		chkSt = checkers.CRITICAL
+		checkers.NewChecker(chkSt, err.Error()).Exit()
 	}
 
 	// 指定されたディレクトリが存在しない場合はエラー終了
 	if _, err := os.Stat(opts.RELEASE_DIR); os.IsNotExist(err) {
-		fmt.Println(err)
-		os.Exit(1)
+		chkSt = checkers.WARNING
+		checkers.NewChecker(chkSt, err.Error()).Exit()
 	}
 
 	pid, err := getProcessNameToPID(opts.PROC_NAME)
 	if err != nil {
-		fmt.Println(err)
+		chkSt = checkers.WARNING
+		checkers.NewChecker(chkSt, err.Error()).Exit()
 	}
 
 	err = checkProcessCWD(pid)
 	if err != nil {
-		fmt.Println(err)
+		chkSt = checkers.WARNING
+		checkers.NewChecker(chkSt, err.Error()).Exit()
 	}
+
+	checkers.NewChecker(chkSt, "OK").Exit()
 }
