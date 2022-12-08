@@ -86,11 +86,13 @@ func checkProcessCWD(pid int) error {
 
 	err = symLinkCheckExists(link)
 	if err != nil {
+		fmt.Println("not exists")
 		return err
 	}
 
 	err = symLinkCheckLatest(link, opts.RELEASE_DIR)
 	if err != nil {
+		fmt.Println("not latest")
 		return err
 	}
 
