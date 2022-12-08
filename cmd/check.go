@@ -46,7 +46,9 @@ func getProcessNameToPID(processName string) (int, error) {
 }
 
 func symLinkCheckExists(link string) error {
+	fmt.Println(link)
 	if _, err := os.Stat(strings.Split(link, "")[0]); os.IsNotExist(err) {
+		fmt.Println(link)
 		return fmt.Errorf("no such directory: %s", link)
 	}
 
