@@ -78,7 +78,7 @@ func symLinkCheckLatest(link, dir string) error {
 
 	// 現在のcwdが最新のディレクトリでない場合はエラーを返す
 	if strings.Split(link, " ")[0] != filepath.Join(dir, "/", newestFile) {
-		return fmt.Errorf("Current reference is not up-to-date")
+		return fmt.Errorf("Current reference [%s] is not latest. latest is %s", strings.Split(link, " ")[0], filepath.Join(dir, "/", newestFile))
 	}
 
 	return nil
