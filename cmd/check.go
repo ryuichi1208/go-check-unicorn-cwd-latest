@@ -33,6 +33,9 @@ func getProcessNameToPID(processName string) (int, error) {
 			log.Fatal(err)
 		}
 		if strings.Index(string(cmdline), processName) > -1 {
+			if strings.Index(string(cmdline), "check-unicorn-cwd-latest") > -1 {
+				continue
+			}
 			return pid, nil
 		}
 	}
@@ -71,6 +74,7 @@ func parseArgs(args []string) error {
 }
 
 func Do() {
+	fmt.Println(os.Args[0])
 	err := parseArgs(os.Args[1:])
 	if err != nil {
 		fmt.Println(err)
