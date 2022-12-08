@@ -7,7 +7,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/jessevdk/go-flags"
 )
+
+type options struct {
+	PROC_NAME string `short:"p" description:"process name" required:"true"`
+}
+
+var opts options
 
 func getProcessNameToPID(processName string) (int, error) {
 	files, err := ioutil.ReadDir("/proc")
@@ -52,8 +60,24 @@ func checkProcessCWD(pid int) error {
 	return symLinkCheck(link)
 }
 
+func parseArgs(args []string) error {
+	_, err := flags.ParseArgs(&opts, os.Args)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func Do() {
-	pid, err := getProcessNameToPID("unicorn")
+	err := parseArgs(os.Args[1:])
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	pid, err := getProcessNameToPID(opts.PROC_NAME)
 	if err != nil {
 		fmt.Println(err)
 	}
