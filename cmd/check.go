@@ -34,6 +34,7 @@ func getProcessNameToPID(processName string) (int, error) {
 }
 
 func symLinkCheck(link string) error {
+	fmt.Println(link)
 	if _, err := os.Stat(link); os.IsNotExist(err) {
 		return fmt.Errorf("no such directory: %s", link)
 	}
@@ -42,6 +43,7 @@ func symLinkCheck(link string) error {
 }
 
 func checkProcessCWD(pid int) error {
+	fmt.Println(pid)
 	link, err := os.Readlink(fmt.Sprintf("/proc/%d/cwd", pid))
 	if err != nil {
 		return fmt.Errorf("error")
@@ -51,7 +53,7 @@ func checkProcessCWD(pid int) error {
 }
 
 func Do() {
-	pid, err := getProcessNameToPID("nginx: master")
+	pid, err := getProcessNameToPID("unicorn")
 	if err != nil {
 		fmt.Println(err)
 	}
