@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -26,6 +27,7 @@ func getProcessNameToPID(processName string) (int, error) {
 
 	for _, dir := range files {
 		pid, err := strconv.Atoi(dir.Name())
+		// pid以外のprocファイルは不要
 		if err != nil {
 			continue
 		}
@@ -34,6 +36,7 @@ func getProcessNameToPID(processName string) (int, error) {
 			log.Fatal(err)
 		}
 		if strings.Index(string(cmdline), processName) > -1 {
+			// 自身がヒットするので除外する
 			if strings.Index(string(cmdline), "check-unicorn-cwd-latest") > -1 {
 				continue
 			}
@@ -45,10 +48,9 @@ func getProcessNameToPID(processName string) (int, error) {
 
 }
 
+// シンボリックリンク先のディレクトリが存在するかを確認する
 func symLinkCheckExists(link string) error {
-	fmt.Println(link)
 	if _, err := os.Stat(strings.Split(link, " ")[0]); os.IsNotExist(err) {
-		fmt.Println(link)
 		return fmt.Errorf("no such directory: %s", link)
 	}
 
@@ -60,19 +62,21 @@ func symLinkCheckLatest(link, dir string) error {
 	var newestFile string
 	var newestTime int64 = 0
 	for _, f := range files {
-		fi, err := os.Stat(dir + "/" + f.Name())
+		fi, err := os.Stat(filepath.Join(dir, "/", f.Name()))
 		if err != nil {
-			fmt.Println(err)
+			continue
 		}
 		currTime := fi.ModTime().Unix()
+
+		// 最新ディレクトリ名を取得する
 		if currTime > newestTime {
 			newestTime = currTime
 			newestFile = f.Name()
 		}
 	}
-	fmt.Println(newestFile)
 
-	if strings.Split(link, "")[0] != dir+"/"+newestFile {
+	// 現在のcwdが最新のディレクトリでない場合はエラーを返す
+	if strings.Split(link, " ")[0] != filepath.Join(dir, "/", newestFile) {
 		return fmt.Errorf("Current reference is not up-to-date")
 	}
 
@@ -80,7 +84,6 @@ func symLinkCheckLatest(link, dir string) error {
 }
 
 func checkProcessCWD(pid int) error {
-	fmt.Println(pid)
 	link, err := os.Readlink(fmt.Sprintf("/proc/%d/cwd", pid))
 	if err != nil {
 		return fmt.Errorf("error")
@@ -88,13 +91,11 @@ func checkProcessCWD(pid int) error {
 
 	err = symLinkCheckExists(link)
 	if err != nil {
-		fmt.Println("not exists")
 		return err
 	}
 
 	err = symLinkCheckLatest(link, opts.RELEASE_DIR)
 	if err != nil {
-		fmt.Println("not latest")
 		return err
 	}
 
@@ -112,9 +113,14 @@ func parseArgs(args []string) error {
 }
 
 func Do() {
-	fmt.Println(os.Args[0])
 	err := parseArgs(os.Args[1:])
 	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// 指定されたディレクトリが存在しない場合はエラー終了
+	if _, err := os.Stat(opts.RELEASE_DIR); os.IsNotExist(err) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
