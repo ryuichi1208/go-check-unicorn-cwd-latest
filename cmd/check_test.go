@@ -1,6 +1,9 @@
 package check
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func Test_getProcessNameToPID(t *testing.T) {
 	type args struct {
@@ -37,8 +40,31 @@ func Test_symLinkCheckExists(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Exists symlink",
+			args: args{
+				link: "test/testdata",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Not Exists symlink",
+			args: args{
+				link: "test/testdata2",
+			},
+			wantErr: true,
+		},
 	}
+	if _, err := os.Stat("./test"); os.IsNotExist(err) {
+		if err := os.Mkdir("./test", 0700); err != nil {
+			t.Errorf("failed mkdir")
+		}
+	}
+	fp, err := os.OpenFile("./test/testdata", os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		t.Errorf("failed open")
+	}
+	defer fp.Close()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := symLinkCheckExists(tt.args.link); (err != nil) != tt.wantErr {
